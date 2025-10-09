@@ -56,3 +56,150 @@ with col_m3: st.metric("Assists totaux", int(df_filtered["Ast"].sum()) if "Ast" 
 with col_m4: st.metric("Buts/Match moyen", f"{df_filtered.get('goals_per_match', pd.Series()).mean():.2f}" if "goals_per_match" in df_filtered else "0.00")
 
 st.divider()
+
+st.subheader("Graphique 3D - Buts vs Assists vs Minutes")
+df_3d = df_filtered[df_filtered['MP'] >= 5].copy()
+
+fig_3d = go.Figure(data=go.Scatter3d(
+    x=df_3d['Gls'], 
+    y=df_3d['Ast'], 
+    z=df_3d['Min'],
+    mode='markers',
+    marker=dict(
+        size=8,
+        color=df_3d['MP'],
+        colorscale='viridis',
+        opacity=0.8
+    ),
+    text=df_3d['Player'],
+    hovertemplate='<b>%{text}</b><br>Buts: %{x}<br>Assists: %{y}<br>Minutes: %{z}<br><extra></extra>'
+))
+
+fig_3d.update_layout(
+    title="Relation 3D : Buts vs Assists vs Minutes",
+    scene=dict(
+        xaxis_title='Buts',
+        yaxis_title='Assists',
+        zaxis_title='Minutes'
+    )
+)
+st.plotly_chart(fig_3d, use_container_width=True)
+
+st.subheader("Performance par Tranche d'Âge")
+if 'Age' in df_filtered.columns:
+    df_filtered['age_group'] = pd.cut(df_filtered['Age'], 
+                                    bins=[0, 22, 25, 28, 32, 50], 
+                                    labels=['18-22', '23-25', '26-28', '29-32', '33+'])
+
+    age_stats = df_filtered.groupby('age_group')[['Gls', 'Ast', 'Min', 'MP']].mean()
+
+    fig_age = go.Figure()
+    fig_age.add_trace(go.Bar(
+        name='Buts moyens',
+        x=age_stats.index,
+        y=age_stats['Gls'],
+        marker_color='#e74c3c',
+        opacity=0.8
+    ))
+    fig_age.add_trace(go.Bar(
+        name='Assists moyens',
+        x=age_stats.index,
+        y=age_stats['Ast'],
+        marker_color='#3498db',
+        opacity=0.8
+    ))
+    fig_age.add_trace(go.Bar(
+        name='Minutes moyennes (x10)',
+        x=age_stats.index,
+        y=age_stats['Min']/10,
+        marker_color='#2ecc71',
+        opacity=0.8
+    ))
+
+    fig_age.update_layout(
+        title="Performance Moyenne par Tranche d'Âge",
+        xaxis_title="Tranche d'âge",
+        yaxis_title="Valeurs moyennes",
+        barmode='group'
+    )
+    st.plotly_chart(fig_age, use_container_width=True)
+
+df_3d = df[df['MP'] >= 5].copy()
+
+fig_3d = go.Figure(data=go.Scatter3d(
+    x=df_3d['Gls'],
+    y=df_3d['Ast'],
+    z=df_3d['Min'],
+    mode='markers',
+    marker=dict(
+        size=8,
+        color=df_3d['MP'],
+        colorscale='viridis',
+        opacity=0.8,
+        colorbar=dict(title="Matchs Joués")
+    ),
+    text=df_3d['Player'],
+    hovertemplate='<b>%{text}</b><br>' +
+                 'Buts: %{x}<br>' +
+                 'Assists: %{y}<br>' +
+                 'Minutes: %{z}<br>' +
+                 '<extra></extra>'
+))
+
+fig_3d.update_layout(
+    title="Relation 3D : Buts vs Assists vs Minutes",
+    scene=dict(
+        xaxis_title='Buts',
+        yaxis_title='Assists',
+        zaxis_title='Minutes'
+    ),
+    plot_bgcolor='rgba(0,0,0,0)',
+    paper_bgcolor='rgba(0,0,0,0)',
+    font_size=12
+)
+
+fig_3d.show()
+
+df['age_group'] = pd.cut(df['Age'], 
+                        bins=[0, 22, 25, 28, 32, 50], 
+                        labels=['18-22', '23-25', '26-28', '29-32', '33+'])
+
+age_stats = df.groupby('age_group')[['Gls', 'Ast', 'Min', 'MP']].mean()
+
+fig_age = go.Figure()
+
+fig_age.add_trace(go.Bar(
+    name='Buts moyens',
+    x=age_stats.index,
+    y=age_stats['Gls'],
+    marker_color='#e74c3c',
+    opacity=0.8
+))
+
+fig_age.add_trace(go.Bar(
+    name='Assists moyens',
+    x=age_stats.index,
+    y=age_stats['Ast'],
+    marker_color='#3498db',
+    opacity=0.8
+))
+
+fig_age.add_trace(go.Bar(
+    name='Minutes moyennes (x10)',
+    x=age_stats.index,
+    y=age_stats['Min']/10,
+    marker_color='#2ecc71',
+    opacity=0.8
+))
+
+fig_age.update_layout(
+    title="Performance Moyenne par Tranche d'Âge",
+    xaxis_title="Tranche d'âge",
+    yaxis_title="Valeurs moyennes",
+    barmode='group',
+    plot_bgcolor='rgba(0,0,0,0)',
+    paper_bgcolor='rgba(0,0,0,0)',
+    font_size=12
+)
+
+fig_age.show()
