@@ -203,3 +203,173 @@ fig_age.update_layout(
 )
 
 fig_age.show()
+st.subheader("Graphiques de Base du Notebook")
+
+col_basic1, col_basic2 = st.columns(2)
+with col_basic1:
+    if 'Pos' in df_filtered.columns:
+        pos_counts = df_filtered['Pos'].value_counts()
+        fig_pos = px.bar(x=pos_counts.index, y=pos_counts.values, 
+                        title="Nombre de joueurs par position", 
+                        color=pos_counts.values, color_continuous_scale='Blues')
+        fig_pos.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_pos, use_container_width=True)
+
+with col_basic2:
+    if 'Nation' in df_filtered.columns:
+        top_nations = df_filtered['Nation'].value_counts().head(15)
+        fig_nations = px.bar(x=top_nations.values, y=top_nations.index, orientation='h',
+                            title="Top 15 des nations (nombre de joueurs)",
+                            color=top_nations.values, color_continuous_scale='Greens')
+        fig_nations.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_nations, use_container_width=True)
+
+st.subheader("Statistiques par Ligue")
+if 'Comp' in df_filtered.columns and 'Gls' in df_filtered.columns:
+    by_league = df_filtered.groupby("Comp")[["Gls","Ast","Min"]].sum().sort_values("Gls", ascending=False)
+    
+    col_league1, col_league2, col_league3 = st.columns(3)
+    
+    with col_league1:
+        fig_gls = px.bar(x=by_league.index, y=by_league["Gls"], 
+                        title="Buts totaux par ligue",
+                        color=by_league["Gls"], color_continuous_scale='Reds')
+        fig_gls.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_gls, use_container_width=True)
+    
+    with col_league2:
+        fig_ast = px.bar(x=by_league.index, y=by_league["Ast"], 
+                        title="Assists totales par ligue",
+                        color=by_league["Ast"], color_continuous_scale='Blues')
+        fig_ast.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_ast, use_container_width=True)
+    
+    with col_league3:
+        fig_min = px.bar(x=by_league.index, y=by_league["Min"], 
+                        title="Minutes totales par ligue",
+                        color=by_league["Min"], color_continuous_scale='Purples')
+        fig_min.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_min, use_container_width=True)
+
+st.subheader("Top Performers")
+if 'goals_per_match' in df_filtered.columns and 'MP' in df_filtered.columns:
+    subset = df_filtered[df_filtered["MP"] >= 5].copy()
+    if len(subset) > 0:
+        top_goals_per_match = subset.nlargest(10, "goals_per_match")
+        fig_top_goals = px.bar(x=top_goals_per_match["goals_per_match"], 
+                              y=top_goals_per_match["Player"],
+                              orientation='h',
+                              title="Top 10 — Buts par match (MP ≥ 5)",
+                              color=top_goals_per_match["goals_per_match"], 
+                              color_continuous_scale='Oranges')
+        fig_top_goals.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_top_goals, use_container_width=True)
+
+st.subheader("Performance par 90 minutes par Position")
+if all(col in df_filtered.columns for col in ['Pos', 'Gls_90', 'Ast_90', 'MP']):
+    data_90 = df_filtered[df_filtered["MP"] >= 5][["Pos", "Gls_90", "Ast_90"]].dropna()
+    if len(data_90) > 0:
+        means_90 = data_90.groupby("Pos")[["Gls_90", "Ast_90"]].mean().sort_values("Gls_90", ascending=False)
+        
+        fig_90 = go.Figure()
+        fig_90.add_trace(go.Bar(
+            name='Buts / 90',
+            x=means_90.index,
+            y=means_90['Gls_90'],
+            marker_color='#e74c3c',
+            opacity=0.8
+        ))
+        fig_90.add_trace(go.Bar(
+            name='Assists / 90',
+            x=means_90.index,
+            y=means_90['Ast_90'],
+            marker_color='#3498db',
+            opacity=0.8
+        ))
+        
+        fig_90.update_layout(
+            title="Moyennes par 90 minutes par poste (MP ≥ 5)",
+            xaxis_title="Position",
+            yaxis_title="Moyenne par 90 minutes",
+            barmode='group',
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+        st.plotly_chart(fig_90, use_container_width=True)
+
+st.subheader("Tableau de Bord Final - Synthèse des Performances")
+
+total_players = len(df_filtered)
+total_goals = df_filtered['Gls'].sum() if 'Gls' in df_filtered else 0
+total_assists = df_filtered['Ast'].sum() if 'Ast' in df_filtered else 0
+avg_goals = df_filtered['Gls'].mean() if 'Gls' in df_filtered else 0
+avg_assists = df_filtered['Ast'].mean() if 'Ast' in df_filtered else 0
+
+if 'Gls' in df_filtered and 'Player' in df_filtered:
+    top_scorer = df_filtered.loc[df_filtered['Gls'].idxmax(), 'Player']
+    top_scorer_goals = df_filtered['Gls'].max()
+else:
+    top_scorer = "N/A"
+    top_scorer_goals = 0
+
+if 'Ast' in df_filtered and 'Player' in df_filtered:
+    top_assister = df_filtered.loc[df_filtered['Ast'].idxmax(), 'Player']
+    top_assister_assists = df_filtered['Ast'].max()
+else:
+    top_assister = "N/A"
+    top_assister_assists = 0
+
+col_metric1, col_metric2, col_metric3, col_metric4 = st.columns(4)
+with col_metric1:
+    st.metric("Total joueurs", f"{total_players:,}")
+with col_metric2:
+    st.metric("Total buts", f"{total_goals:,}")
+with col_metric3:
+    st.metric("Total assists", f"{total_assists:,}")
+with col_metric4:
+    st.metric("Moyenne buts/joueur", f"{avg_goals:.2f}")
+
+col_metric5, col_metric6, col_metric7, col_metric8 = st.columns(4)
+with col_metric5:
+    st.metric("Moyenne assists/joueur", f"{avg_assists:.2f}")
+with col_metric6:
+    st.metric("Meilleur buteur", f"{top_scorer} ({top_scorer_goals} buts)")
+with col_metric7:
+    st.metric("Meilleur passeur", f"{top_assister} ({top_assister_assists} assists)")
+with col_metric8:
+    st.metric("Ligues", len(df_filtered['Comp'].unique()) if 'Comp' in df_filtered else 0)
+
+col_final1, col_final2, col_final3 = st.columns(3)
+
+with col_final1:
+    if 'Gls' in df_filtered and 'Player' in df_filtered:
+        top_scorers = df_filtered.nlargest(10, 'Gls')
+        fig_top_scorers = px.bar(x=top_scorers['Gls'], y=top_scorers['Player'], orientation='h',
+                                title="Top 10 Buteurs", color=top_scorers['Gls'], 
+                                color_continuous_scale='Reds')
+        fig_top_scorers.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_top_scorers, use_container_width=True)
+
+with col_final2:
+    if 'Ast' in df_filtered and 'Player' in df_filtered:
+        top_assisters = df_filtered.nlargest(10, 'Ast')
+        fig_top_assisters = px.bar(x=top_assisters['Ast'], y=top_assisters['Player'], orientation='h',
+                                  title="Top 10 Passeurs", color=top_assisters['Ast'], 
+                                  color_continuous_scale='Blues')
+        fig_top_assisters.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_top_assisters, use_container_width=True)
+
+with col_final3:
+    if 'Comp' in df_filtered:
+        league_counts = df_filtered['Comp'].value_counts()
+        fig_league_pie = px.pie(values=league_counts.values, names=league_counts.index, 
+                               title="Répartition par Ligue")
+        fig_league_pie.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        st.plotly_chart(fig_league_pie, use_container_width=True)
+
+st.subheader("Tableau de Résultats")
+display_cols = [c for c in ["Player","Pos","Comp","Nation","MP","Gls","Ast","Min","goals_per_match","assists_per_match"] if c in df_filtered.columns]
+st.dataframe(df_filtered[display_cols].sort_values(display_cols[5] if len(display_cols) > 5 else display_cols[0], ascending=False),
+             use_container_width=True)
+
+st.success("Dashboard mis à jour avec les graphiques actuels du notebook `cleaningcsvfoot.ipynb` !")
