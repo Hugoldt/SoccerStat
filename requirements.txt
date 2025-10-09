@@ -3,3 +3,6 @@ numpy
 jupyterlab
 ipykernel
 matplotlib
+streamlit
+plotly
+scikit-learn
